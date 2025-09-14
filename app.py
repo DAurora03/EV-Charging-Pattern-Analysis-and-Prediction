@@ -13,9 +13,7 @@ import joblib
 st.set_page_config(page_title="EV User Type Prediction", layout="wide")
 st.title("🚗 EV User Type Prediction (Commuter vs Non-Commuter)")
 
-# ----------------------------
 # Load Dataset
-# ----------------------------
 @st.cache_data
 def load_data():
     df = pd.read_csv("ev_charging_patterns.csv", encoding='utf-8', low_memory=False)
@@ -24,9 +22,7 @@ def load_data():
 df = load_data()
 st.write(f"Dataset Loaded: {df.shape[0]} rows, {df.shape[1]} columns")
 
-# ----------------------------
 # Preprocessing
-# ----------------------------
 data = df.dropna(subset=["User Type"]).copy()
 data["User Type Binary"] = data["User Type"].apply(lambda x: "Commuter" if x=="Commuter" else "Non-Commuter")
 data["Charging Start Time"] = pd.to_datetime(data["Charging Start Time"], errors='coerce')
@@ -53,9 +49,8 @@ rf = RandomForestClassifier(n_estimators=300, max_depth=10, class_weight="balanc
 rf.fit(X_train, y_train)
 y_pred = rf.predict(X_test)
 
-# ----------------------------
+
 # Model Evaluation
-# ----------------------------
 accuracy = accuracy_score(y_test, y_pred)
 st.subheader("🔍 Model Performance")
 st.write(f"**Accuracy:** {accuracy:.2f}")
