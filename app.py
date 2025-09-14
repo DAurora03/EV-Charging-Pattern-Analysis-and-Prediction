@@ -1,316 +1,74 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyNACNWMiiacdbiC1A/2JAZH",
-      "include_colab_link": True
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/DAurora03/EV-Charging-Pattern-Analysis-and-Prediction/blob/main/app.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "# =========================\n",
-        "# RUN MODEL AND PREDICT DIRECTLY (No Streamlit, No ngrok)\n",
-        "# =========================\n",
-        "\n",
-        "# Install packages\n",
-        "!pip install pandas numpy scikit-learn --quiet\n",
-        "\n",
-        "from google.colab import files\n",
-        "import pandas as pd\n",
-        "import io\n",
-        "\n",
-        "# Upload CSV\n",
-        "uploaded = files.upload()\n",
-        "try:\n",
-        "    df = pd.read_csv(io.BytesIO(list(uploaded.values())[0]), encoding='utf-8')\n",
-        "except UnicodeDecodeError:\n",
-        "    df = pd.read_csv(io.BytesIO(list(uploaded.values())[0]), encoding='latin1')\n",
-        "\n",
-        "# Preprocessing\n",
-        "data = df.dropna(subset=[\"User Type\"]).copy()\n",
-        "data[\"User Type Binary\"] = data[\"User Type\"].apply(lambda x: \"Commuter\" if x==\"Commuter\" else \"Non-Commuter\")\n",
-        "data[\"Charging Start Time\"] = pd.to_datetime(data[\"Charging Start Time\"])\n",
-        "data[\"Hour\"] = data[\"Charging Start Time\"].dt.hour\n",
-        "data[\"SOC_Diff\"] = data[\"State of Charge (End %)\"] - data[\"State of Charge (Start %)\"]\n",
-        "\n",
-        "features = [\"Battery Capacity (kWh)\", \"SOC_Diff\", \"Charging Duration (hours)\", \"Hour\"]\n",
-        "X = data[features]\n",
-        "y = data[\"User Type Binary\"]\n",
-        "\n",
-        "# Encode target\n",
-        "from sklearn.preprocessing import LabelEncoder, StandardScaler\n",
-        "le = LabelEncoder()\n",
-        "y = le.fit_transform(y)\n",
-        "\n",
-        "from sklearn.impute import SimpleImputer\n",
-        "imputer = SimpleImputer(strategy=\"mean\")\n",
-        "X = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)\n",
-        "\n",
-        "scaler = StandardScaler()\n",
-        "X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)\n",
-        "\n",
-        "# Train-test split and model\n",
-        "from sklearn.model_selection import train_test_split\n",
-        "from sklearn.ensemble import RandomForestClassifier\n",
-        "from sklearn.metrics import accuracy_score\n",
-        "\n",
-        "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n",
-        "rf = RandomForestClassifier(n_estimators=300, max_depth=10, class_weight=\"balanced\", random_state=42)\n",
-        "rf.fit(X_train, y_train)\n",
-        "y_pred = rf.predict(X_test)\n",
-        "\n",
-        "# Evaluation\n",
-        "accuracy = accuracy_score(y_test, y_pred)\n",
-        "print(f\"Model Accuracy: {accuracy:.2f}\")\n",
-        "\n",
-        "# Auto-predict first 5 test samples\n",
-        "print(\"\\nSample Predictions:\")\n",
-        "for i in range(5):\n",
-        "    sample = X_test.iloc[i:i+1]\n",
-        "    pred = rf.predict(sample)\n",
-        "    print(f\"Input: {sample.values[0]}, Predicted User Type: {le.inverse_transform(pred)[0]}\")\n"
-      ],
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/",
-          "height": 217
-        },
-        "id": "9l8bFmCumq3T",
-        "outputId": "8929bc24-8c8d-4a38-9e89-6bbe5ebd6f45"
-      },
-      "execution_count": 4,
-      "outputs": [
-        {
-          "output_type": "display_data",
-          "data": {
-            "text/plain": [
-              "<IPython.core.display.HTML object>"
-            ],
-            "text/html": [
-              "\n",
-              "     <input type=\"file\" id=\"files-9b798c28-946d-4f9c-bfa3-6d134ba7bbe9\" name=\"files[]\" multiple disabled\n",
-              "        style=\"border:none\" />\n",
-              "     <output id=\"result-9b798c28-946d-4f9c-bfa3-6d134ba7bbe9\">\n",
-              "      Upload widget is only available when the cell has been executed in the\n",
-              "      current browser session. Please rerun this cell to enable.\n",
-              "      </output>\n",
-              "      <script>// Copyright 2017 Google LLC\n",
-              "//\n",
-              "// Licensed under the Apache License, Version 2.0 (the \"License\");\n",
-              "// you may not use this file except in compliance with the License.\n",
-              "// You may obtain a copy of the License at\n",
-              "//\n",
-              "//      http://www.apache.org/licenses/LICENSE-2.0\n",
-              "//\n",
-              "// Unless required by applicable law or agreed to in writing, software\n",
-              "// distributed under the License is distributed on an \"AS IS\" BASIS,\n",
-              "// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n",
-              "// See the License for the specific language governing permissions and\n",
-              "// limitations under the License.\n",
-              "\n",
-              "/**\n",
-              " * @fileoverview Helpers for google.colab Python module.\n",
-              " */\n",
-              "(function(scope) {\n",
-              "function span(text, styleAttributes = {}) {\n",
-              "  const element = document.createElement('span');\n",
-              "  element.textContent = text;\n",
-              "  for (const key of Object.keys(styleAttributes)) {\n",
-              "    element.style[key] = styleAttributes[key];\n",
-              "  }\n",
-              "  return element;\n",
-              "}\n",
-              "\n",
-              "// Max number of bytes which will be uploaded at a time.\n",
-              "const MAX_PAYLOAD_SIZE = 100 * 1024;\n",
-              "\n",
-              "function _uploadFiles(inputId, outputId) {\n",
-              "  const steps = uploadFilesStep(inputId, outputId);\n",
-              "  const outputElement = document.getElementById(outputId);\n",
-              "  // Cache steps on the outputElement to make it available for the next call\n",
-              "  // to uploadFilesContinue from Python.\n",
-              "  outputElement.steps = steps;\n",
-              "\n",
-              "  return _uploadFilesContinue(outputId);\n",
-              "}\n",
-              "\n",
-              "// This is roughly an async generator (not supported in the browser yet),\n",
-              "// where there are multiple asynchronous steps and the Python side is going\n",
-              "// to poll for completion of each step.\n",
-              "// This uses a Promise to block the python side on completion of each step,\n",
-              "// then passes the result of the previous step as the input to the next step.\n",
-              "function _uploadFilesContinue(outputId) {\n",
-              "  const outputElement = document.getElementById(outputId);\n",
-              "  const steps = outputElement.steps;\n",
-              "\n",
-              "  const next = steps.next(outputElement.lastPromiseValue);\n",
-              "  return Promise.resolve(next.value.promise).then((value) => {\n",
-              "    // Cache the last promise value to make it available to the next\n",
-              "    // step of the generator.\n",
-              "    outputElement.lastPromiseValue = value;\n",
-              "    return next.value.response;\n",
-              "  });\n",
-              "}\n",
-              "\n",
-              "/**\n",
-              " * Generator function which is called between each async step of the upload\n",
-              " * process.\n",
-              " * @param {string} inputId Element ID of the input file picker element.\n",
-              " * @param {string} outputId Element ID of the output display.\n",
-              " * @return {!Iterable<!Object>} Iterable of next steps.\n",
-              " */\n",
-              "function* uploadFilesStep(inputId, outputId) {\n",
-              "  const inputElement = document.getElementById(inputId);\n",
-              "  inputElement.disabled = false;\n",
-              "\n",
-              "  const outputElement = document.getElementById(outputId);\n",
-              "  outputElement.innerHTML = '';\n",
-              "\n",
-              "  const pickedPromise = new Promise((resolve) => {\n",
-              "    inputElement.addEventListener('change', (e) => {\n",
-              "      resolve(e.target.files);\n",
-              "    });\n",
-              "  });\n",
-              "\n",
-              "  const cancel = document.createElement('button');\n",
-              "  inputElement.parentElement.appendChild(cancel);\n",
-              "  cancel.textContent = 'Cancel upload';\n",
-              "  const cancelPromise = new Promise((resolve) => {\n",
-              "    cancel.onclick = () => {\n",
-              "      resolve(null);\n",
-              "    };\n",
-              "  });\n",
-              "\n",
-              "  // Wait for the user to pick the files.\n",
-              "  const files = yield {\n",
-              "    promise: Promise.race([pickedPromise, cancelPromise]),\n",
-              "    response: {\n",
-              "      action: 'starting',\n",
-              "    }\n",
-              "  };\n",
-              "\n",
-              "  cancel.remove();\n",
-              "\n",
-              "  // Disable the input element since further picks are not allowed.\n",
-              "  inputElement.disabled = true;\n",
-              "\n",
-              "  if (!files) {\n",
-              "    return {\n",
-              "      response: {\n",
-              "        action: 'complete',\n",
-              "      }\n",
-              "    };\n",
-              "  }\n",
-              "\n",
-              "  for (const file of files) {\n",
-              "    const li = document.createElement('li');\n",
-              "    li.append(span(file.name, {fontWeight: 'bold'}));\n",
-              "    li.append(span(\n",
-              "        `(${file.type || 'n/a'}) - ${file.size} bytes, ` +\n",
-              "        `last modified: ${\n",
-              "            file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() :\n",
-              "                                    'n/a'} - `));\n",
-              "    const percent = span('0% done');\n",
-              "    li.appendChild(percent);\n",
-              "\n",
-              "    outputElement.appendChild(li);\n",
-              "\n",
-              "    const fileDataPromise = new Promise((resolve) => {\n",
-              "      const reader = new FileReader();\n",
-              "      reader.onload = (e) => {\n",
-              "        resolve(e.target.result);\n",
-              "      };\n",
-              "      reader.readAsArrayBuffer(file);\n",
-              "    });\n",
-              "    // Wait for the data to be ready.\n",
-              "    let fileData = yield {\n",
-              "      promise: fileDataPromise,\n",
-              "      response: {\n",
-              "        action: 'continue',\n",
-              "      }\n",
-              "    };\n",
-              "\n",
-              "    // Use a chunked sending to avoid message size limits. See b/62115660.\n",
-              "    let position = 0;\n",
-              "    do {\n",
-              "      const length = Math.min(fileData.byteLength - position, MAX_PAYLOAD_SIZE);\n",
-              "      const chunk = new Uint8Array(fileData, position, length);\n",
-              "      position += length;\n",
-              "\n",
-              "      const base64 = btoa(String.fromCharCode.apply(null, chunk));\n",
-              "      yield {\n",
-              "        response: {\n",
-              "          action: 'append',\n",
-              "          file: file.name,\n",
-              "          data: base64,\n",
-              "        },\n",
-              "      };\n",
-              "\n",
-              "      let percentDone = fileData.byteLength === 0 ?\n",
-              "          100 :\n",
-              "          Math.round((position / fileData.byteLength) * 100);\n",
-              "      percent.textContent = `${percentDone}% done`;\n",
-              "\n",
-              "    } while (position < fileData.byteLength);\n",
-              "  }\n",
-              "\n",
-              "  // All done.\n",
-              "  yield {\n",
-              "    response: {\n",
-              "      action: 'complete',\n",
-              "    }\n",
-              "  };\n",
-              "}\n",
-              "\n",
-              "scope.google = scope.google || {};\n",
-              "scope.google.colab = scope.google.colab || {};\n",
-              "scope.google.colab._files = {\n",
-              "  _uploadFiles,\n",
-              "  _uploadFilesContinue,\n",
-              "};\n",
-              "})(self);\n",
-              "</script> "
-            ]
-          },
-          "metadata": {}
-        },
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Saving ev_charging_patterns.csv to ev_charging_patterns (3).csv\n",
-            "Model Accuracy: 0.52\n",
-            "\n",
-            "Sample Predictions:\n",
-            "Input: [-1.18990122 -1.71273949 -0.72769126 -0.79454663], Predicted User Type: Non-Commuter\n",
-            "Input: [ 0.50755409 -0.22868158 -0.6770531   1.37239873], Predicted User Type: Commuter\n",
-            "Input: [ 0.02256686  0.79869941  0.41584511 -0.21669454], Predicted User Type: Non-Commuter\n",
-            "Input: [ 1.23503494  1.13027726 -0.05641392 -1.51686175], Predicted User Type: Non-Commuter\n",
-            "Input: [-1.18990122 -0.4254666   0.4708396   1.08347268], Predicted User Type: Non-Commuter\n"
-          ]
-        }
-      ]
-    }
-  ]
-}
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+import joblib
+
+st.set_page_config(page_title="EV User Type Prediction", layout="wide")
+st.title("🚗 EV User Type Prediction (Commuter vs Non-Commuter)")
+
+# ----------------------------
+# Load Dataset
+# ----------------------------
+@st.cache_data
+def load_data():
+    df = pd.read_csv("ev_charging_patterns.csv", encoding='utf-8', low_memory=False)
+    return df
+
+df = load_data()
+st.write(f"Dataset Loaded: {df.shape[0]} rows, {df.shape[1]} columns")
+
+# ----------------------------
+# Preprocessing
+# ----------------------------
+data = df.dropna(subset=["User Type"]).copy()
+data["User Type Binary"] = data["User Type"].apply(lambda x: "Commuter" if x=="Commuter" else "Non-Commuter")
+data["Charging Start Time"] = pd.to_datetime(data["Charging Start Time"], errors='coerce')
+data["Hour"] = data["Charging Start Time"].dt.hour.fillna(12)
+data["SOC_Diff"] = data["State of Charge (End %)"] - data["State of Charge (Start %)"]
+
+features = ["Battery Capacity (kWh)", "SOC_Diff", "Charging Duration (hours)", "Hour"]
+X = data[features]
+y = data["User Type Binary"]
+
+# Encode target
+le = LabelEncoder()
+y = le.fit_transform(y)
+
+# Handle missing values and scale
+imputer = SimpleImputer(strategy="mean")
+X = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
+scaler = StandardScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+
+# Train-test split and model
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+rf = RandomForestClassifier(n_estimators=300, max_depth=10, class_weight="balanced", random_state=42)
+rf.fit(X_train, y_train)
+y_pred = rf.predict(X_test)
+
+# ----------------------------
+# Model Evaluation
+# ----------------------------
+accuracy = accuracy_score(y_test, y_pred)
+st.subheader("🔍 Model Performance")
+st.write(f"**Accuracy:** {accuracy:.2f}")
+
+st.text("Classification Report:")
+st.text(classification_report(y_test, y_pred, target_names=le.classes_))
+
+cm = confusion_matrix(y_test, y_pred)
+st.subheader("Confusion Matrix")
+fig, ax = plt.subplots()
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=le.classes_, yticklabels=le.classes_, ax=ax)
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+st.pyplot(fig)
+
+#
